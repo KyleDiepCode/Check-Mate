@@ -1,0 +1,43 @@
+"use client"
+import { useState } from "react";
+
+
+
+
+
+export default function PersonRow( { person, personSelect, personToggle } ){
+
+    return(
+    <div 
+    onClick={() => personSelect(person.id)}
+    className={`p-5 border border-gray-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${person.id === personToggle.selectedid ? "bg-gray-200" : "bg-gray-50"}` }
+    >      
+      <div className="font-semibold text-lg text-gray-700 w-32">
+        {person.name}
+      </div>
+      <div className="flex-1 grid grid-cols-3 gap-3">
+        <div>
+          <label 
+          onClick = {(e)=> e.stopPropagation()}
+          className="block text-xs text-gray-500 mb-1">Subtotal</label>
+          <input type="number" className="w-full border rounded-md p-2 text-sm outline-none focus:border-blue-500" placeholder="0.00" />
+        </div>
+        <div>
+          <label 
+          onClick = {(e)=> e.stopPropagation()}
+          className="block text-xs text-gray-500 mb-1">Tax</label>
+          <input type="number" className="w-full border rounded-md p-2 text-sm outline-none focus:border-blue-500" placeholder="0.00" />
+        </div>
+        <div>
+          <label 
+          onClick = {(e)=> e.stopPropagation()}
+          className="block text-xs text-gray-500 mb-1">Tip</label>
+          <input type="number" className="w-full border rounded-md p-2 text-sm outline-none focus:border-blue-500" placeholder="0.00" />
+        </div>
+        <div>
+        </div>
+      </div>
+    </div>
+  );
+} 
+
