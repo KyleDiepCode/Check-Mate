@@ -96,6 +96,7 @@ export default function Splitter(){
                 // If Already inside
                 if(person.items.includes(itemid)){
                     return {...person, items: person.items.filter((id) => id !== itemid)}
+                    console.log("clicked item")
                 }
                 //if not inside
                 else{
@@ -109,15 +110,23 @@ export default function Splitter(){
     }   
 
 // Conditional to turn the item gray
-// Parameters OnClick of a person it will go through the items[]
-// those items in there turn gray
-// 
-    const itemGreyselect = (item, person) =>{
-        if(person.items.includes(item.id)){
-            return true; 
+    const itemGreyselect = (itemid) =>{
+        if(personToggle.clicked){
+            const holder = people.find((person) => person.id === personToggle.selectedid)
+            if(holder && holder.items.includes(itemid)){
+                return true
+            }
         }
-        return false;
+        return false
     }
+
+// Calculate the SubTotal per person
+
+    const calculateSubtotal = (person) =>{
+        
+
+    }
+
 
 
 
@@ -155,7 +164,7 @@ export default function Splitter(){
                 </button>
 
                 <div className="space-y-4"> {/* This adds the section based on how many items*/ }
-                    {items.map((item) => (<ItemBar key={item.id} item = {item} updateItem={updateItem} toggleselect={toggleselect}/>))}
+                    {items.map((item) => (<ItemBar key = {item.id} item = {item} updateItem={updateItem} toggleselect={toggleselect} itemGreyselect= {itemGreyselect}/>))}
                 </div>
             </div>
         </div>
