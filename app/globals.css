@@ -1,9 +1,21 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Concert+One&family=Indie+Flower&display=swap');
+
 @import "tailwindcss";
+
+
 
 /*
 This is the global css for all pages
 */
 
+.font-indie {
+  font-family: "Indie Flower", cursive;
+}
+
+.font-concert {
+  font-family: "Concert One", sans-serif;
+}
 :root {
   --background: #ffffff;
   --foreground: #171717;

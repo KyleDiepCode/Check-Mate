@@ -5,12 +5,13 @@ import { useState } from "react";
 
 
 
-export default function PersonRow( { person, personSelect, personToggle } ){
+export default function PersonRow( { person, personSelect, personToggle , calculateSubtotal} ){
 
     return(
     <div 
     onClick={() => personSelect(person.id)}
-    className={`p-5 border border-gray-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${person.id === personToggle.selectedid ? "bg-gray-200" : "bg-gray-50"}` }
+    className={`p-5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${person.id === personToggle.selectedid ? "bg-gray-200" : "bg-gray-50"}` }
+    style={{ outline: `5px inset ${person.color}` }} 
     >      
       <div className="font-semibold text-lg text-gray-700 w-32">
         {person.name}
@@ -37,6 +38,7 @@ export default function PersonRow( { person, personSelect, personToggle } ){
         <div>
         </div>
       </div>
+      <p>{calculateSubtotal(person).toFixed(2)}</p>
     </div>
   );
 } 
