@@ -172,7 +172,7 @@ export default function ManualInputPage(){
                 })
                 }
                 <button>
-                    hello
+                    
                 </button>
 
             </div>
