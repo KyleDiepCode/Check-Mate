@@ -1,7 +1,9 @@
 
 
 
-export default function TitleAndButtons(){
+export default function TitleAndButtons( {pageSwap} ){
+
+
 	return(
 	<div className="min-h-screen flex flex-col items-center justify-center gap-4">
 
@@ -22,7 +24,7 @@ export default function TitleAndButtons(){
 
 			<div className="flex gap-4">
 			<button
-				onClick={() => setPage("Scanning Receipt")}
+				onClick={() => pageSwap("Scanning Receipt")}
 				className="flex flex-col items-center gap-2 p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
 			>
 				📷
@@ -31,7 +33,7 @@ export default function TitleAndButtons(){
 			</button>
 
 			<button
-				onClick={() => setPage("calculator")}
+				onClick={() => pageSwap("Manual Page")}
 				className="flex flex-col items-center gap-2 p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
 			>
 				✏️

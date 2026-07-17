@@ -3,19 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import ItemBar from "./ItemBar";
 import PersonRow from "./Person";
-import Total from "./MoneyTotals";
 
 
-
-export default function ManualInputPage(){
-
-    const colors = ["#8EB1C7", "#FFEB0A", "#EFAB57", "#5A5379", "#C51B29"]
-
-    // Global total of all items
-    const [total, setTotal] = useState(0);
-    const [tax, setTax] = useState(0);
-    const [tip, setTip] = useState(0);
-
+export default function ManualInputPage({pageSwap, changeResults, total, setTotal, tax, setTax, tip, setTip, items, setItem, people, setPeople, colors}){
 
     // Toggler and track player
     const [personToggle, setPersonToggle] = useState(
@@ -25,31 +15,11 @@ export default function ManualInputPage(){
         }
     )
 
-    // # of Item List 
-    const [items, setItem] = useState([
-        {
-        id : 1,
-        name : "",
-        price : 0,
-    }
-    ]);
-
-    // # of people list
-    const [people, setPeople] = useState([
-        { 
-        id: 1,
-        name: "Person 1", 
-        items: [],
-        subtotal: 0, 
-        color: colors[0],
-        }
-    ]);
-
     // Adding items/people
     const addItem = () => {
         const newItem = {
             id: items.length + 1,
-            name: "",
+            name: `Item ${items.length + 1}`,
             price: 0
         };
     setItem([...items, newItem])
@@ -60,7 +30,6 @@ export default function ManualInputPage(){
         {
             id: people.length + 1, // Gives them a unique ID for # of peop;le
             name: `Person ${people.length + 1}`, // ${} is to input int into string
-            subtotal: 0,
             color: colors[people.length],
             items: []
         };
@@ -137,6 +106,39 @@ export default function ManualInputPage(){
             return total + (tempItem.price / splitCount)
         }, 0)
     }
+
+// Calculate the Total price - chosen items
+    const calculateUnassignedTotal = () => {
+        const totalItems = items.reduce((sum, item) => sum + item.price, 0)
+        const assignedTotal = people.reduce((sum, person) => {
+            return sum + calculateSubtotal(person)
+            }, 0)
+        return totalItems - assignedTotal
+    }
+
+// Calculate the tax percentage and what each person should pay in tax
+    const calculatePersonTaxTip = (person, subtotal, taxamount, tipamount) => {
+        const taxpercent = taxamount / subtotal
+        const tippercent = tipamount / subtotal
+        const personSubTotal = calculateSubtotal(person)
+        let personTipShare =  personSubTotal * tippercent
+        if(isNaN(personTipShare)) personTipShare = 0
+        let personTaxShare = personSubTotal * taxpercent
+        if(isNaN(personTaxShare)) personTaxShare = 0
+        return {
+            total: personSubTotal,
+            tax: personTaxShare,
+            tip: personTipShare,
+            grandtotal: personSubTotal + personTaxShare + personTipShare
+        }
+    }
+
+    // Checks that each Item has at least one person connected to it
+    const allItemsAssigned = items.every((item) => people.some((p) => p.items.includes(item.id)))
+    // Checks to see that all items added equals the toal and 0.05 for error
+    const totalsMatch = Math.abs(items.reduce((sum, item) => sum + item.price, 0) - total) < 0.01
+
+
 // Auto cursor to the Item
     const newItemref = useRef(null)
 
@@ -151,6 +153,12 @@ export default function ManualInputPage(){
 
     return(
         <div className="flex flex-col m-10 h-lvl bg-gray-500">
+            <button 
+            className="fixed top-4 left-4"
+            onClick={ () => {pageSwap("Title Page")}}
+            >
+                &lt; Back
+            </button>
             {/* This is the Item List */}
             <div className="flex flex-col gap-2 h-screen items-center overflow-y-auto ">
                 <button 
@@ -171,8 +179,63 @@ export default function ManualInputPage(){
                     />
                 })
                 }
-                <button>
-                    
+                <div className="flex flex-col bg-white border rounded-lg p-3">
+                    <label className="block text-xs text-gray-500 mb-1">Subtotal (no tax)</label>
+                    <input
+                    type="number"
+                    onChange={(e) => setTotal(e.target.value || 0)}
+                    className=" border bg-gray-300 border-gray-300 mb-3 rounded-lg p-2 text-sm text-blue-600"
+                    >
+                    </input>
+                    <label className="block text-xs text-gray-500 mb-1">Tax</label>
+                    <input
+                    type="number"
+                    onChange={(e) => setTax(e.target.value|| 0)}
+                    className=" border bg-gray-300 mb-3 border-gray-300 rounded-lg p-2 text-sm text-blue-600"
+                    >
+                    </input>
+                    <label className="block text-xs text-gray-500 mb-1">Tip</label>
+                    <input
+                    type="number"
+                    onChange={(e) => setTip(e.target.value || 0)}
+                    className=" border bg-gray-300 mb-3 border-gray-300 rounded-lg p-2 text-sm text-blue-600"
+                    >
+                    </input>
+                </div>
+                {/* Add Input that takes the subtotal and tax */}
+                <button 
+                className="border rounded-lg p-3 px-7 bg-black text-white"
+                onClick={ () => {
+                    if (!allItemsAssigned || !totalsMatch) {
+                        alert("Please assign all items and make sure totals match!")
+                        return
+                    }
+                    changeResults(people.map( (person) => {
+                        const personStats = calculatePersonTaxTip(person, total, tax, tip)
+                        return {
+                            // ...personStats works also
+                            name: person.name,
+                            total: personStats.total,
+                            tax: personStats.tax,
+                            tip: personStats.tip,
+                            grandtotal: personStats.grandtotal,
+                            
+                            items: person.items.map((itemId) => {
+                                const foundItem = items.find((item) => item.id === itemId)
+                                const splitCount = people.filter((p) => p.items.includes(itemId)).length
+                                const splitPrice = foundItem.price / splitCount
+                                
+                                return {
+                                    name: foundItem.name,
+                                    price: splitPrice,
+                                    
+                                }
+                            })}
+                    }))
+                    pageSwap("Results Page")
+                }}
+                >
+                    Calculate!?!
                 </button>
 
             </div>
