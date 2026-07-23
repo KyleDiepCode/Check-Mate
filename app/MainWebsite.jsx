@@ -1,9 +1,10 @@
 
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import TitleAndButtons from "./Components/FrontPage"
 import ManualInputPage from "./Components/Manual"
 import Results from "./Components/ResultPage.jsx"
+import ScanPage from "./Components/ScanRecieptPage"
 
 
 
@@ -33,12 +34,7 @@ Big Task list:
 Current Task:  
 
     sub task:
-    * Caluclate the tax and tip✔
-    * Create a section in Manual for total, tax amount, tip amount✔
-    * Apply the tax to each person via how much they spent ✔
-    * Check if the added amount adds up to the subtotal 
-    * Have a verification to check th emoney adds up
-    * If it doesnt have an error or a pop up saying its not all asigned
+
 
 
 Maybe:
@@ -55,11 +51,11 @@ export default function WebPage() {
     const [results, changeResults] = useState([])
     const colors = ["#8EB1C7", "#FFEB0A", "#EFAB57", "#5A5379", "#C51B29"]
 
-    const [total, setTotal] = useState(0)
-    const [tax, setTax] = useState(0)
-    const [tip, setTip] = useState(0)
+    const [total, setTotal] = useState("")
+    const [tax, setTax] = useState("")
+    const [tip, setTip] = useState("")
     const [items, setItem] = useState([
-        { id: 1, name: "Item 1", price: 0 }
+        { id: 1, name: "", price: 0 }
     ])
     const [people, setPeople] = useState([
         { id: 1, name: "Person 1", items: [], color: colors[0] }
@@ -67,7 +63,15 @@ export default function WebPage() {
     
     return(
         <div>
-            {CurrentPage == "Title Page" && <TitleAndButtons pageSwap = {pageSwap} />}
+            {CurrentPage == "Title Page" && 
+            <TitleAndButtons 
+            pageSwap = {pageSwap} 
+            setItem={setItem} 
+            setTotal={setTotal}
+            setTax={setTax}
+            setTip={setTip}
+            />}
+
             {CurrentPage == "Manual Page" && 
             <ManualInputPage 
             pageSwap = {pageSwap} 
@@ -77,9 +81,27 @@ export default function WebPage() {
             tip={tip} setTip={setTip}
             items={items} setItem={setItem}
             people={people} setPeople={setPeople}
-            colors={colors}/>
+            colors={colors}
+            />
+            
             }
-            {CurrentPage == "Results Page" && <Results pageSwap = {pageSwap} results = {results}/>}
+            {CurrentPage == "Scan Page" && 
+            <ScanPage 
+            pageSwap= {pageSwap}
+            changeResults={changeResults}
+            total={total} setTotal={setTotal}
+            tax={tax} setTax={setTax}
+            tip={tip} setTip={setTip}
+            items={items} setItem={setItem}
+            people={people} setPeople={setPeople}
+            colors={colors}
+            />
+        }
+            {CurrentPage == "Results Page" && 
+            <Results 
+            pageSwap = {pageSwap} 
+            results = {results} 
+            />}
         </div>
     )
 

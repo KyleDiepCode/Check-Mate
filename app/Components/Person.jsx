@@ -1,21 +1,30 @@
 "use client"
-import { useState } from "react";
 
 
 
 
 
-export default function PersonRow( { person, personSelect, personToggle , calculateSubtotal} ){
+export default function PersonRow( { person, personSelect, personToggle , calculateSubtotal, updatePerson} ){
 
     return(
     <div 
     onClick={() => personSelect(person.id)}
-    className={`p-5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${person.id === personToggle.selectedid ? "bg-gray-200" : "bg-gray-50"}` }
+    className={`p-7 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${person.id === personToggle.selectedid ? "bg-gray-200" : "bg-gray-50"}` }
     style={{ outline: `5px inset ${person.color}` }} 
-    >      
-      <div className="font-semibold text-lg text-gray-700 w-32">
-        {person.name}
-      </div>
+    >    
+      <input 
+      className="font-semibold text-lg text-gray-700"
+      style={{ fieldSizing: 'content', minWidth: '4ch' }}
+      value={person.name}
+    //   need on change since its a controlled input
+      onChange={(e) => updatePerson(person.id, "name", e.target.value)}
+      onClick={(e) => {
+        e.stopPropagation()
+        e.target.select()}
+      }
+      >
+      </input>
+      {/*
       <div className="flex-1 grid grid-cols-3 gap-3">
         <div>
           <label 
@@ -39,6 +48,7 @@ export default function PersonRow( { person, personSelect, personToggle , calcul
         </div>
       </div>
       <p>{calculateSubtotal(person).toFixed(2)}</p>
+        */}
     </div>
   );
 } 
