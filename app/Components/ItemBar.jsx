@@ -9,14 +9,19 @@ import { useEffect, useRef } from "react";
 
 
 // Item bar is the Text Box for the food and price
-export default function ItemBar({ item, updateItem, newItemref, toggleselect, assignedPeople, itemGreyselect, removeItem}) {
+export default function ItemBar({ item, updateItem, newItemref, toggleselect, assignedPeople, itemGreyselect, removeItem, selectedPersonColor }) {
     const moveTotalref = useRef(null)
+
+    const isAssigned = itemGreyselect(item.id)
+    const hasActivePerson = !!selectedPersonColor
 
     const textBoxStyle = "block text-xs text-gray-500 mb-1"
     return (
         <div
             onClick={() => toggleselect(item.id)}
-            className={`flex items-center gap-10 p-3 w-full md:w-132 rounded-lg shadow-m mb-3 ${itemGreyselect(item.id) ? 'bg-gray-200' : 'bg-gray-50'}`}>
+            className={`flex items-center gap-10 p-3 w-full md:w-132 rounded-lg shadow-sm mb-3 transition-all ${!isAssigned && hasActivePerson ? 'ring-2 ring-dashed ring-gray-400' : ''}`}
+            style={{ backgroundColor: isAssigned && selectedPersonColor ? `${selectedPersonColor}55` : '#f9fafb' }}
+        >
             <div className="flex-1">
                 <label className={textBoxStyle}> Item {item.id}</label>
                 <input

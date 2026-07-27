@@ -1,14 +1,54 @@
 
 
 
+"use client"
+import { useState } from "react"
+
 export default function TitleAndButtons( {pageSwap, setItem, itemNum, setTotal, setTax, setTip} ){
+	const [scanning, setScanning] = useState(false)
 
+	const handleFiles = async (e) => {
+		const files = Array.from(e.target.files)
+		if (!files.length) return
+		setScanning(true)
+		try {
+			const allResults = await Promise.all(files.map(async (file) => {
+				const base64 = await new Promise((res, rej) => {
+					const reader = new FileReader()
+					reader.onload = () => res(reader.result.split(",")[1])
+					reader.onerror = rej
+					reader.readAsDataURL(file)
+				})
+				const response = await fetch("/api/parse-receipt", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
+				})
+				return response.json()
+			}))
 
-	const grabTotal = (data) => {
-		const holder = data.items[data.items.length-1]
-		setTotal(holder.totalBeforeTax)
-		setTax(holder.tax)
-		setTip(holder.tip)
+			let mergedItems = []
+			let mergedTotal = 0, mergedTax = 0, mergedTip = 0
+			let counter = 1
+
+			allResults.forEach(({ items }) => {
+				const last = items[items.length - 1]
+				mergedTotal += last.totalBeforeTax || 0
+				mergedTax += last.tax || 0
+				mergedTip += last.tip || 0
+				items.slice(0, -1).forEach(item => {
+					mergedItems.push({ id: counter++, name: item.name, price: item.price })
+				})
+			})
+
+			setItem(mergedItems)
+			setTotal(String(Math.round(mergedTotal * 100) / 100))
+			setTax(String(Math.round(mergedTax * 100) / 100))
+			setTip(String(Math.round(mergedTip * 100) / 100))
+			pageSwap("Manual Page")
+		} finally {
+			setScanning(false)
+		}
 	}
 
 
@@ -44,31 +84,12 @@ export default function TitleAndButtons( {pageSwap, setItem, itemNum, setTotal, 
 				 */}
 
 				<label
-					className="flex flex-col items-center gap-2 p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
+					className={`flex flex-col items-center gap-2 p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer ${scanning ? "opacity-50 pointer-events-none" : ""}`}
 				>
 					📷
-					<span className="font-medium">Scan Receipt</span>
-					<span className="text-xs text-gray-400">Uplaod Image</span>
-					<input type="file" accept="image/*" className="hidden" onChange={(e) => {
-						const file = e.target.files[0]
-						const reader = new FileReader()
-						reader.readAsDataURL(file)
-						// onload is to what to do with the data
-						reader.onload = async (e) => {
-							const base64 = e.target.result.split(",")[1]
-							const response = await fetch("/api/parse-receipt", {
-								method: "POST",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
-							})
-							const data = await response.json()
-							grabTotal(data)
-							//everything except last in
-							setItem(data.items.slice(0,-1))
-							itemNum = data.items.length
-							pageSwap("Manual Page")
-						}}}>
-						</input>
+					<span className="font-medium">{scanning ? "Scanning…" : "Scan Receipt"}</span>
+					<span className="text-xs text-gray-400">1 or more images</span>
+					<input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
 				</label>
 
 				<button

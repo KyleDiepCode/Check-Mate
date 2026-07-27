@@ -123,7 +123,7 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
             //Filter checking each person if they have the id, doing the incude to 
             //only include the person with id. Length of array is whats left
             const splitCount = people.filter((p) => p.items.includes(id)).length
-            return total + (tempItem.price / splitCount)
+            return Math.round((total + (tempItem.price / splitCount)) * 100) / 100
         }, 0)
     }
 
@@ -141,22 +141,32 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
         const taxpercent = taxamount / subtotal
         const tippercent = tipamount / subtotal
         const personSubTotal = calculateSubtotal(person)
-        let personTipShare = personSubTotal * tippercent
+        let personTipShare = Math.round(personSubTotal * tippercent * 100) / 100
         if (isNaN(personTipShare)) personTipShare = 0
-        let personTaxShare = personSubTotal * taxpercent
+        let personTaxShare = Math.round(personSubTotal * taxpercent * 100) / 100
         if (isNaN(personTaxShare)) personTaxShare = 0
         return {
             total: personSubTotal,
             tax: personTaxShare,
             tip: personTipShare,
-            grandtotal: personSubTotal + personTaxShare + personTipShare
+            grandtotal: Math.round((personSubTotal + personTaxShare + personTipShare) * 100) / 100
         }
+    }
+
+    const selectAllItems = () => {
+        const allIds = items.map(i => i.id)
+        setPeople(people.map((person) => {
+            if (person.id !== personToggle.selectedid) return person
+            const hasAll = allIds.every(id => person.items.includes(id))
+            return { ...person, items: hasAll ? [] : allIds }
+        }))
     }
 
     // Checks that each Item has at least one person connected to it
     const allItemsAssigned = items.every((item) => people.some((p) => p.items.includes(item.id)))
-    // Checks to see that all items added equals the toal and 0.05 for error
-    const totalsMatch = Math.abs(items.reduce((sum, item) => sum + item.price, 0) - (parseFloat(total) || 0)) < 0.01
+    const itemsSum = Math.round(items.reduce((sum, item) => sum + item.price, 0) * 100) / 100
+    const grandTotal = Math.round(((parseFloat(total) || 0) + (parseFloat(tax) || 0) + (parseFloat(tip) || 0)) * 100) / 100
+    const totalsMatch = Math.abs(itemsSum - (parseFloat(total) || 0)) < 0.01 || Math.abs(itemsSum - grandTotal) < 0.01
 
 
     // Auto cursor to the Item
@@ -172,23 +182,17 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
 
 
     return (
-        <div className="flex flex-col m-10 h-lvl bg-gray-500">
+        <div className="flex flex-col h-screen overflow-hidden pt-4">
             <button
-                className="fixed top-4 left-4"
+                className="fixed top-4 left-4 z-10 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 shadow-sm transition"
                 onClick={() => { pageSwap("Title Page") }}
             >
-                &lt; Back
+                ← Back
             </button>
             {/* This is the Item List */}
-            <button
-                onClick={addItem}
-                className="w-55 cursor-pointer self-end mb-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
-            >
-                + Add Food Item
-            </button>
-            <div className="flex flex-col gap-2 h-screen items-center overflow-y-auto ">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto items-center pb-40 mt-12 px-6">
                 {items.map((item, index) => {
-
+                    const selectedPerson = people.find(p => p.id === personToggle.selectedid)
                     return <ItemBar
                         key={item.id}
                         item={item}
@@ -198,10 +202,15 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                         assignedPeople={people.filter((person) => person.items.includes(item.id))}
                         itemGreyselect={itemGreyselect}
                         removeItem={removeItem}
+                        selectedPersonColor={selectedPerson ? selectedPerson.color : null}
                     />
-
-                })
-                }
+                })}
+                <button
+                    onClick={addItem}
+                    className="w-55 cursor-pointer mb-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+                >
+                    + Add Food Item
+                </button>
                 <div className="flex flex-col bg-white border rounded-lg p-3">
                     <label className="block text-xs text-gray-500 mb-1">Subtotal (no tax)</label>
                     <input
@@ -230,36 +239,41 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                     </input>
                 </div>
                 {/* Add Input that takes the subtotal and tax */}
+                {!allItemsAssigned && (
+                    <p className="text-red-500 text-sm">Assign all items before calculating.</p>
+                )}
+                {!totalsMatch && allItemsAssigned && (
+                    <p className="text-yellow-600 text-sm">
+                        Items sum to ${Math.round(items.reduce((s, i) => s + i.price, 0) * 100) / 100} but subtotal is ${parseFloat(total) || 0} — results may be off.
+                    </p>
+                )}
                 <button
-                    className="border rounded-lg p-3 px-7 bg-black text-white"
+                    className="border rounded-lg p-3 px-7 bg-black text-white disabled:opacity-40"
+                    disabled={!allItemsAssigned}
                     onClick={() => {
-                        if (!allItemsAssigned || !totalsMatch) {
-                            alert("Please assign all items and make sure totals match!")
-                            return
-                        }
-                        changeResults(people.map((person) => {
+                        const actualTotal = Math.round((parseFloat(total) + (parseFloat(tax) || 0) + (parseFloat(tip) || 0)) * 100) / 100
+                        const rawResults = people.map((person) => {
                             const personStats = calculatePersonTaxTip(person, parseFloat(total) || 0, parseFloat(tax) || 0, parseFloat(tip) || 0)
                             return {
-                                // ...personStats works also
                                 name: person.name,
                                 total: personStats.total,
                                 tax: personStats.tax,
                                 tip: personStats.tip,
                                 grandtotal: personStats.grandtotal,
-
                                 items: person.items.map((itemId) => {
                                     const foundItem = items.find((item) => item.id === itemId)
                                     const splitCount = people.filter((p) => p.items.includes(itemId)).length
-                                    const splitPrice = foundItem.price / splitCount
-
+                                    const splitPrice = Math.round((foundItem.price / splitCount) * 100) / 100
                                     return {
                                         name: foundItem.name || `Item ${foundItem.id}`,
                                         price: splitPrice,
-
                                     }
                                 })
                             }
-                        }))
+                        })
+                        const othersTotal = rawResults.slice(0, -1).reduce((sum, r) => Math.round((sum + r.grandtotal) * 100) / 100, 0)
+                        rawResults[rawResults.length - 1].grandtotal = Math.round((actualTotal - othersTotal) * 100) / 100
+                        changeResults(rawResults)
                         pageSwap("Results Page")
                     }}
                 >
@@ -294,6 +308,16 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                     >
                         - Remove Person
                     </button>
+                    {personToggle.clicked && (
+                        <button
+                            onClick={selectAllItems}
+                            className="cursor-pointer bg-white border-2 border-black text-black px-5 py-2.5 rounded-lg font-medium hover:bg-gray-100 transition shadow-sm"
+                        >
+                            {items.every(i => people.find(p => p.id === personToggle.selectedid)?.items.includes(i.id))
+                                ? "Deselect All"
+                                : "Select All"}
+                        </button>
+                    )}
                 </div>
             </div>
 

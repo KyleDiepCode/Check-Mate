@@ -6,24 +6,28 @@
 
 export default function PersonRow( { person, personSelect, personToggle , calculateSubtotal, updatePerson} ){
 
+    const isSelected = person.id === personToggle.selectedid
+
     return(
-    <div 
+    <div
     onClick={() => personSelect(person.id)}
-    className={`p-7 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${person.id === personToggle.selectedid ? "bg-gray-200" : "bg-gray-50"}` }
-    style={{ outline: `5px inset ${person.color}` }} 
-    >    
-      <input 
-      className="font-semibold text-lg text-gray-700"
+    className="p-4 rounded-xl flex flex-col items-start gap-1 cursor-pointer transition-all"
+    style={{
+        outline: `4px solid ${person.color}`,
+        backgroundColor: isSelected ? person.color : '#f9fafb'
+    }}
+    >
+      <input
+      className="font-semibold text-base text-gray-700 bg-transparent"
       style={{ fieldSizing: 'content', minWidth: '4ch' }}
       value={person.name}
-    //   need on change since its a controlled input
       onChange={(e) => updatePerson(person.id, "name", e.target.value)}
       onClick={(e) => {
         e.stopPropagation()
         e.target.select()}
       }
-      >
-      </input>
+      />
+      <span className="text-xs font-semibold text-gray-700">${calculateSubtotal(person).toFixed(2)}</span>
       {/*
       <div className="flex-1 grid grid-cols-3 gap-3">
         <div>
