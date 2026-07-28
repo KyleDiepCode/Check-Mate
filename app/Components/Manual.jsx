@@ -40,11 +40,11 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
     }
 
     const addPerson = () => {
-        const newPerson =
-        {
-            id: people.length + 1, // Gives them a unique ID for # of peop;le
-            name: `Person ${people.length + 1}`, // ${} is to input int into string
-            color: colors[people.length],
+        const newId = Math.max(...people.map(p => p.id), 0) + 1
+        const newPerson = {
+            id: newId,
+            name: `Person ${newId}`,
+            color: colors[(people.length) % colors.length],
             items: []
         };
         setPeople([...people, newPerson]);
@@ -89,7 +89,6 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                 // If Already inside
                 if (person.items.includes(itemid)) {
                     return { ...person, items: person.items.filter((id) => id !== itemid) }
-                    console.log("clicked item")
                 }
                 //if not inside
                 else {
@@ -153,6 +152,11 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
         }
     }
 
+    const clearAllItems = () => {
+        setItem([{ id: 1, name: "", price: 0 }])
+        setPeople(people.map(person => ({ ...person, items: [] })))
+    }
+
     const selectAllItems = () => {
         const allIds = items.map(i => i.id)
         setPeople(people.map((person) => {
@@ -182,15 +186,34 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
 
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden pt-4">
+        <div className="flex flex-col h-dvh overflow-hidden pt-4">
             <button
-                className="fixed top-4 left-4 z-10 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 shadow-sm transition"
+                className="fixed top-4 left-4 z-20 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 shadow-sm transition"
                 onClick={() => { pageSwap("Title Page") }}
             >
                 ← Back
             </button>
+            {personToggle.clicked && (() => {
+                const selectedPerson = people.find(p => p.id === personToggle.selectedid)
+                const allSelected = items.every(i => selectedPerson?.items.includes(i.id))
+                return (
+                    <div
+                        className="fixed top-14 left-0 right-0 z-10 px-4 py-2 flex items-center justify-between shadow-sm"
+                        style={{ backgroundColor: selectedPerson?.color }}
+                    >
+                        <span className="font-semibold text-sm text-gray-800">{selectedPerson?.name} selected</span>
+                        <button
+                            onClick={selectAllItems}
+                            className="text-sm font-medium bg-white/60 px-3 py-1 rounded-lg"
+                        >
+                            {allSelected ? "Deselect All" : "Select All"}
+                        </button>
+                    </div>
+                )
+            })()}
             {/* This is the Item List */}
-            <div className="flex flex-col gap-2 flex-1 overflow-y-auto items-center pb-40 mt-12 px-6">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto items-center pb-80 mt-12 px-6 py-1"
+                style={{ marginTop: personToggle.clicked ? '6rem' : '3rem' }}>
                 {items.map((item, index) => {
                     const selectedPerson = people.find(p => p.id === personToggle.selectedid)
                     return <ItemBar
@@ -205,12 +228,20 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                         selectedPersonColor={selectedPerson ? selectedPerson.color : null}
                     />
                 })}
-                <button
-                    onClick={addItem}
-                    className="w-55 cursor-pointer mb-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
-                >
-                    + Add Food Item
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={addItem}
+                        className="cursor-pointer bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+                    >
+                        + Add Item
+                    </button>
+                    <button
+                        onClick={clearAllItems}
+                        className="cursor-pointer text-xs text-gray-400 hover:text-red-500 transition"
+                    >
+                        Clear All
+                    </button>
+                </div>
                 <div className="flex flex-col bg-white border rounded-lg p-3">
                     <label className="block text-xs text-gray-500 mb-1">Subtotal (no tax)</label>
                     <input
@@ -220,7 +251,6 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                         className=" border bg-gray-300 border-gray-300 mb-3 rounded-lg p-2 text-sm text-blue-600"
                     >
                     </input>
-                    <p> `${calculateUnassignedTotal()}`</p>
                     <label className="block text-xs text-gray-500 mb-1">Tax</label>
                     <input
                         type="number"
@@ -238,7 +268,6 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                     >
                     </input>
                 </div>
-                {/* Add Input that takes the subtotal and tax */}
                 {!allItemsAssigned && (
                     <p className="text-red-500 text-sm">Assign all items before calculating.</p>
                 )}
@@ -256,6 +285,7 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                             const personStats = calculatePersonTaxTip(person, parseFloat(total) || 0, parseFloat(tax) || 0, parseFloat(tip) || 0)
                             return {
                                 name: person.name,
+                                color: person.color,
                                 total: personStats.total,
                                 tax: personStats.tax,
                                 tip: personStats.tip,
@@ -279,11 +309,10 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                 >
                     Calculate!?!
                 </button>
-
             </div>
             {/* This is the People Bar */}
-            <div className="fixed bottom-7 left-0 w-full md:w-34/35 p-4 flex flex-row justify-around mx-5 ">
-                <div className="flex flex-row gap-3">
+            <div className="fixed bottom-7 left-0 right-0 px-4 py-2 flex justify-center">
+                <div className="flex flex-row gap-3 overflow-x-auto p-2 max-w-full">
                     {people.map((person) => {
                         return <PersonRow
                             key={person.id}
@@ -296,28 +325,12 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
 
                     })}
 
-                    <button
-                        onClick={addPerson}
-                        className="cursor-pointer bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition shadow-sm"
-                    >
+                    <button onClick={addPerson} className="cursor-pointer shrink-0 bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition shadow-sm">
                         + Add Person
                     </button>
-                    <button
-                        onClick={() => removePerson(people.length)}
-                        className="cursor-pointer bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition shadow-sm"
-                    >
+                    <button onClick={() => removePerson(people.length)} className="cursor-pointer shrink-0 bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition shadow-sm">
                         - Remove Person
                     </button>
-                    {personToggle.clicked && (
-                        <button
-                            onClick={selectAllItems}
-                            className="cursor-pointer bg-white border-2 border-black text-black px-5 py-2.5 rounded-lg font-medium hover:bg-gray-100 transition shadow-sm"
-                        >
-                            {items.every(i => people.find(p => p.id === personToggle.selectedid)?.items.includes(i.id))
-                                ? "Deselect All"
-                                : "Select All"}
-                        </button>
-                    )}
                 </div>
             </div>
 

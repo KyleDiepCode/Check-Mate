@@ -19,7 +19,7 @@ export default function ItemBar({ item, updateItem, newItemref, toggleselect, as
     return (
         <div
             onClick={() => toggleselect(item.id)}
-            className={`flex items-center gap-10 p-3 w-full md:w-132 rounded-lg shadow-sm mb-3 transition-all ${!isAssigned && hasActivePerson ? 'ring-2 ring-dashed ring-gray-400' : ''}`}
+            className={`flex items-center gap-2 md:gap-6 p-3 w-full md:w-160 rounded-lg shadow-sm mb-3 transition-all ${!isAssigned && hasActivePerson ? 'ring-2 ring-dashed ring-gray-400' : ''}`}
             style={{ backgroundColor: isAssigned && selectedPersonColor ? `${selectedPersonColor}55` : '#f9fafb' }}
         >
             <div className="flex-1">
@@ -40,7 +40,7 @@ export default function ItemBar({ item, updateItem, newItemref, toggleselect, as
                 >
                 </input>
             </div>
-            <div className="w-32">
+            <div className="w-20 md:w-32">
                 <label className={textBoxStyle}> $ Price</label>
                 <input
                     ref={moveTotalref}
@@ -53,7 +53,7 @@ export default function ItemBar({ item, updateItem, newItemref, toggleselect, as
                 >
                 </input>
             </div>
-            <div className="flex flex-wrap border-2 rounded-md p-2 mt-4">
+            <div className="flex flex-wrap border-2 rounded-md p-2 self-center">
                 {assignedPeople
                     .map((person) => (
                         <div
@@ -66,7 +66,7 @@ export default function ItemBar({ item, updateItem, newItemref, toggleselect, as
             </div>
             <button
                 onClick={() => removeItem(item.id)}
-                className="cursor-pointer self-end mb-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+                className="cursor-pointer shrink-0 self-center bg-gray-900 text-white px-2 py-1 md:px-4 md:py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition"
             >
                 X
             </button>

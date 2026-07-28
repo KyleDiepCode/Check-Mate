@@ -13,7 +13,7 @@ export default function PersonRow( { person, personSelect, personToggle , calcul
     onClick={() => personSelect(person.id)}
     className="p-4 rounded-xl flex flex-col items-start gap-1 cursor-pointer transition-all"
     style={{
-        outline: `4px solid ${person.color}`,
+        boxShadow: `0 0 0 4px ${person.color}`,
         backgroundColor: isSelected ? person.color : '#f9fafb'
     }}
     >

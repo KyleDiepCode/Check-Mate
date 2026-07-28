@@ -6,11 +6,13 @@ import { useState } from "react"
 
 export default function TitleAndButtons( {pageSwap, setItem, itemNum, setTotal, setTax, setTip} ){
 	const [scanning, setScanning] = useState(false)
+	const [scanError, setScanError] = useState(null)
 
 	const handleFiles = async (e) => {
 		const files = Array.from(e.target.files)
 		if (!files.length) return
 		setScanning(true)
+		setScanError(null)
 		try {
 			const allResults = await Promise.all(files.map(async (file) => {
 				const base64 = await new Promise((res, rej) => {
@@ -46,6 +48,8 @@ export default function TitleAndButtons( {pageSwap, setItem, itemNum, setTotal, 
 			setTax(String(Math.round(mergedTax * 100) / 100))
 			setTip(String(Math.round(mergedTip * 100) / 100))
 			pageSwap("Manual Page")
+		} catch (err) {
+			setScanError("Couldn't read the receipt — try a clearer photo.")
 		} finally {
 			setScanning(false)
 		}
@@ -70,6 +74,7 @@ export default function TitleAndButtons( {pageSwap, setItem, itemNum, setTotal, 
 		<div className="flex flex-col items-center gap-4 border border-gray-200 rounded-2xl p-10 bg-white">
 
 			<p className="text-gray-500">How do you want to start?</p>
+			{scanError && <p className="text-red-500 text-sm">{scanError}</p>}
 
 			<div className="flex gap-4">
 				{/*

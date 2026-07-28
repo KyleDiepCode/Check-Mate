@@ -52,7 +52,7 @@ Big Tasks (later):
 export default function WebPage() {
     const [CurrentPage, pageSwap] = useState("Title Page")
     const [results, changeResults] = useState([])
-    const colors = ["#8EB1C7", "#FFEB0A", "#EFAB57", "#5A5379", "#C51B29"]
+    const colors = ["#8EB1C7", "#FFEB0A", "#EFAB57", "#5A5379", "#C51B29", "#136F63", "#C9035F"]
 
     const [total, setTotal] = useState("")
     const [tax, setTax] = useState("")
