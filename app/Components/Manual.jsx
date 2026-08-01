@@ -37,6 +37,9 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
 
     const removePerson = (id) => {
         setPeople(people.filter((person) => person.id !== id))
+        if (personToggle.selectedid === id) {
+            setPersonToggle({ selectedid: -1, clicked: false })
+        }
     }
 
     const addPerson = () => {
@@ -328,7 +331,7 @@ export default function ManualInputPage({ pageSwap, changeResults, total, setTot
                     <button onClick={addPerson} className="cursor-pointer shrink-0 bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition shadow-sm">
                         + Add Person
                     </button>
-                    <button onClick={() => removePerson(people.length)} className="cursor-pointer shrink-0 bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition shadow-sm">
+                    <button onClick={() => removePerson(people[people.length - 1].id)} className="cursor-pointer shrink-0 bg-black text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition shadow-sm">
                         - Remove Person
                     </button>
                 </div>
