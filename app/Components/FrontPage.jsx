@@ -1,113 +1,134 @@
-
-
-
 "use client"
 import { useState } from "react"
+import { compressImage } from "../lib/image"
 
-export default function TitleAndButtons( {pageSwap, setItem, itemNum, setTotal, setTax, setTip} ){
-	const [scanning, setScanning] = useState(false)
-	const [scanError, setScanError] = useState(null)
+// Turns a File into base64. Used if the browser can't compress it (e.g. HEIC on Chrome).
+function readAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result.split(",")[1])
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+    })
+}
 
-	const handleFiles = async (e) => {
-		const files = Array.from(e.target.files)
-		if (!files.length) return
-		setScanning(true)
-		setScanError(null)
-		try {
-			const allResults = await Promise.all(files.map(async (file) => {
-				const base64 = await new Promise((res, rej) => {
-					const reader = new FileReader()
-					reader.onload = () => res(reader.result.split(",")[1])
-					reader.onerror = rej
-					reader.readAsDataURL(file)
-				})
-				const response = await fetch("/api/parse-receipt", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
-				})
-				return response.json()
-			}))
+async function scanOne(file) {
+    let payload
+    try {
+        payload = await compressImage(file)
+    } catch {
+        payload = { base64: await readAsBase64(file), mimeType: file.type }
+    }
 
-			let mergedItems = []
-			let mergedTotal = 0, mergedTax = 0, mergedTip = 0
-			let counter = 1
+    const response = await fetch("/api/parse-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: payload.base64, mimeType: payload.mimeType }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+        throw new Error(data.error || "Couldn't read the receipt — try a clearer photo.")
+    }
+    return data
+}
 
-			allResults.forEach(({ items }) => {
-				const last = items[items.length - 1]
-				mergedTotal += last.totalBeforeTax || 0
-				mergedTax += last.tax || 0
-				mergedTip += last.tip || 0
-				items.slice(0, -1).forEach(item => {
-					mergedItems.push({ id: counter++, name: item.name, price: item.price })
-				})
-			})
+const STEPS = ["Scan or type your receipt", "Tap who had what", "See what everyone owes"]
 
-			setItem(mergedItems)
-			setTotal(String(Math.round(mergedTotal * 100) / 100))
-			setTax(String(Math.round(mergedTax * 100) / 100))
-			setTip(String(Math.round(mergedTip * 100) / 100))
-			pageSwap("Manual Page")
-		} catch (err) {
-			setScanError("Couldn't read the receipt — try a clearer photo.")
-		} finally {
-			setScanning(false)
-		}
-	}
+export default function FrontPage({ setPage, dispatch }) {
+    const [scanning, setScanning] = useState(false)
+    const [scanError, setScanError] = useState(null)
 
+    const handleFiles = async (e) => {
+        const files = Array.from(e.target.files)
+        e.target.value = "" // lets you pick the same file again after an error
+        if (!files.length) return
 
+        setScanning(true)
+        setScanError(null)
+        try {
+            const scans = await Promise.all(files.map(scanOne))
 
-	return(
-	<div className="min-h-screen flex flex-col items-center justify-center gap-4">
+            // Several photos = one long receipt, so add everything together
+            const merged = { items: [], subtotal: 0, tax: 0, tip: 0 }
+            for (const scan of scans) {
+                merged.items.push(...scan.items)
+                merged.subtotal += scan.subtotal
+                merged.tax += scan.tax
+                merged.tip += scan.tip
+            }
+            const round = (n) => Math.round(n * 100) / 100
 
-		{/* Title outside the card */}
-		<div className="w-2/5 bg-[#D9E6C6] rounded-xl p-4 text-center m-10 p-12">
-			<h1 className="font-concert text-4xl text-[#3a5c2a] font-bold">
-			Check-Mate
-			</h1>
-			<p className="font-concert text-xs text-[#3a5c2a]">
-				Hangouts made easy!!!
-			</p>
-		</div>
+            dispatch({
+                type: "LOAD_SCAN",
+                items: merged.items,
+                subtotal: round(merged.subtotal),
+                tax: round(merged.tax),
+                tip: round(merged.tip),
+            })
+            setPage("manual")
+        } catch (err) {
+            setScanError(err.message)
+        } finally {
+            setScanning(false)
+        }
+    }
 
-		{/* White card */}
-		<div className="flex flex-col items-center gap-4 border border-gray-200 rounded-2xl p-10 bg-white">
+    const tile =
+        "flex-1 flex flex-col items-center gap-1 p-6 rounded-xl border-2 border-sage bg-white hover:border-forest/50 hover:bg-background transition cursor-pointer text-center"
 
-			<p className="text-gray-500">How do you want to start?</p>
-			{scanError && <p className="text-red-500 text-sm">{scanError}</p>}
+    return (
+        <main className="min-h-dvh flex flex-col items-center justify-center gap-6 px-4 py-10">
+            <div className="w-full max-w-md bg-sage rounded-2xl px-8 py-10 text-center">
+                <h1 className="font-concert text-5xl text-forest">Check-Mate</h1>
+                <p className="font-concert text-sm text-forest/80 mt-1">Hangouts made easy!!!</p>
+            </div>
 
-			<div className="flex gap-4">
-				{/*
-				<button
-					onClick={() => pageSwap("Scan Page")}
-					className="flex flex-col items-center gap-2 p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
-				>
-					📷
-					<span className="font-medium">Scan Receipt</span>
-					<span className="text-xs text-gray-400">Upload a photo</span>
-				</button>
-				 */}
+            <div className="card w-full max-w-md p-6 sm:p-8 flex flex-col gap-5">
+                <p className="text-center text-gray-600 font-medium">How do you want to start?</p>
 
-				<label
-					className={`flex flex-col items-center gap-2 p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer ${scanning ? "opacity-50 pointer-events-none" : ""}`}
-				>
-					📷
-					<span className="font-medium">{scanning ? "Scanning…" : "Scan Receipt"}</span>
-					<span className="text-xs text-gray-400">1 or more images</span>
-					<input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
-				</label>
+                {scanError && (
+                    <p role="alert" className="text-red-600 text-sm text-center bg-red-50 rounded-lg px-3 py-2">
+                        {scanError}
+                    </p>
+                )}
 
-				<button
-					onClick={() => pageSwap("Manual Page")}
-					className="flex flex-col items-center gap-2 p-6 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
-				>
-					✏️
-					<span className="font-medium">Enter Manually</span>
-					<span className="text-xs text-gray-400">Type items in</span>
-				</button>
-			</div>
+                <div className="flex gap-3">
+                    <label className={`${tile} ${scanning ? "opacity-60 pointer-events-none" : ""}`}>
+                        <span aria-hidden="true" className="text-3xl">
+                            📷
+                        </span>
+                        <span className="font-semibold text-gray-800">{scanning ? "Scanning…" : "Scan Receipt"}</span>
+                        <span className="text-xs text-gray-500">1 or more photos</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="sr-only"
+                            onChange={handleFiles}
+                            disabled={scanning}
+                        />
+                    </label>
 
-		</div>
-    </div>
+                    <button type="button" onClick={() => setPage("manual")} className={tile}>
+                        <span aria-hidden="true" className="text-3xl">
+                            ✏️
+                        </span>
+                        <span className="font-semibold text-gray-800">Enter Manually</span>
+                        <span className="text-xs text-gray-500">Type items in</span>
+                    </button>
+                </div>
+
+                <ol className="flex flex-col gap-2 border-t border-gray-100 pt-5">
+                    {STEPS.map((step, i) => (
+                        <li key={step} className="flex items-center gap-3 text-sm text-gray-600">
+                            <span className="w-6 h-6 shrink-0 rounded-full bg-sage text-forest text-xs font-bold flex items-center justify-center">
+                                {i + 1}
+                            </span>
+                            {step}
+                        </li>
+                    ))}
+                </ol>
+            </div>
+        </main>
     )
 }

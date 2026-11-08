@@ -1,99 +1,47 @@
+"use client"
 
-
-import { useState, useRef } from "react";
-import TitleAndButtons from "./Components/FrontPage"
+import { useEffect, useReducer, useState } from "react"
+import FrontPage from "./Components/FrontPage"
 import ManualInputPage from "./Components/Manual"
-import Results from "./Components/ResultPage.jsx"
-import ScanPage from "./Components/ScanRecieptPage"
+import ResultsPage from "./Components/ResultPage"
+import { receiptReducer, createInitialState } from "./lib/receiptReducer"
 
+const STORAGE_KEY = "checkmate-receipt-v1"
+const PAGES = ["title", "manual", "results"]
 
+// Reads saved data from a previous visit. Returns null if there's nothing usable.
+function loadSaved() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
+        if (!saved || !Array.isArray(saved.receipt?.items) || !Array.isArray(saved.receipt?.people)) return null
+        return saved
+    } catch {
+        return null
+    }
+}
 
-/*
-
-Finished:
-* Color set for each person ✔
-* Flex-wrap inside item box so when selected the color shows ✔
-* Add color to each person ✔
-* When click on the item add the color ✔
-* When you create an item it focuses the text box ✔
-* Calculate button sends to results page ✔
-* Page navigation works ✔
-* Sending name and value to result page ✔
-* Calculate tax and tip per person ✔
-* Total / tax / tip input section ✔
-* Verify all items assigned before calculating ✔
-* Back buttons on Manual and Results pages ✔
-* State lifted to MainWebsite so nav back keeps data ✔
-* Remove item (cleans up person assignments too) ✔
-* Remove person ✔
-* Editable person names (click to edit, auto-selects text) ✔
-* Receipt scanning via Gemini API ✔
-* Pre-populate Manual page from scanned receipt ✔
-* ID counter fix using Math.max so no duplicate keys after delete ✔
-
-Current Task:
-* Fix rounding — convert all prices to cents (integers) internally,
-  divide by 100 only at display time (option 3)
-* Penny adjustment for last person so totals always add up exactly (option 2)
-
-Up Next:
-* HTML/CSS polish — receipt-style PersonResultCube, mobile layout
-* Show unassigned total on Manual page so user knows whats left to assign
-* Handle edge case: what if Gemini misreads a price
-
-Big Tasks (later):
-* Mobile styling polish
-* Deploy to Vercel
-
-*/
-
-
-
-export default function WebPage() {
-    const [CurrentPage, pageSwap] = useState("Title Page")
-    const [results, changeResults] = useState([])
-    const colors = ["#8EB1C7", "#FFEB0A", "#EFAB57", "#5A5379", "#C51B29", "#136F63", "#C9035F"]
-
-    const [total, setTotal] = useState("")
-    const [tax, setTax] = useState("")
-    const [tip, setTip] = useState("")
-    const [items, setItem] = useState([
-        { id: 1, name: "", price: 0 }
-    ])
-    const [people, setPeople] = useState([
-        { id: 1, name: "Person 1", items: [], color: colors[0] }
-    ])
-
-    return(
-        <div>
-            {CurrentPage == "Title Page" && <TitleAndButtons pageSwap = {pageSwap} setItem={setItem} setTotal={setTotal} setTax={setTax} setTip={setTip} />}
-
-            {CurrentPage == "Manual Page" &&
-            <ManualInputPage
-            pageSwap = {pageSwap}
-            changeResults={changeResults}
-            total={total} setTotal={setTotal}
-            tax={tax} setTax={setTax}
-            tip={tip} setTip={setTip}
-            items={items} setItem={setItem}
-            people={people} setPeople={setPeople}
-            colors={colors}/>
-            }
-            {CurrentPage == "Scan Page" &&
-            <ScanPage
-            pageSwap= {pageSwap}
-            changeResults={changeResults}
-            total={total} setTotal={setTotal}
-            tax={tax} setTax={setTax}
-            tip={tip} setTip={setTip}
-            items={items} setItem={setItem}
-            people={people} setPeople={setPeople}
-            colors={colors}
-            />
-        }
-            {CurrentPage == "Results Page" && <Results pageSwap = {pageSwap} results = {results}/>}
-        </div>
+export default function MainWebsite() {
+    // Start from whatever was saved last visit (page.tsx makes sure this runs in the browser)
+    const [saved] = useState(loadSaved)
+    const [page, setPage] = useState(() => (PAGES.includes(saved?.page) ? saved.page : "title"))
+    const [receipt, dispatch] = useReducer(receiptReducer, saved, (s) =>
+        s ? { ...createInitialState(), ...s.receipt } : createInitialState()
     )
 
+    // Save on every change, so a refresh doesn't lose anything
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ page, receipt }))
+        } catch {
+            // Private mode / storage full: the app still works, it just won't remember
+        }
+    }, [page, receipt])
 
+    return (
+        <div>
+            {page === "title" && <FrontPage setPage={setPage} dispatch={dispatch} />}
+            {page === "manual" && <ManualInputPage setPage={setPage} receipt={receipt} dispatch={dispatch} />}
+            {page === "results" && <ResultsPage setPage={setPage} receipt={receipt} dispatch={dispatch} />}
+        </div>
+    )
 }
